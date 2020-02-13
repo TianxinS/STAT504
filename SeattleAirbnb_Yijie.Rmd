@@ -13,7 +13,7 @@ library(tidyverse)
 
 # 1. load the dataset and keep the variables that we are interested in
 ```{r}
-setwd("/Users/yijiewu/Desktop/STAT 504/Project")
+setwd("../STAT504_Final_Project")
 rawdata <- read_csv("listings.csv")
 rawdata <- rawdata[,c("price", "id", "name", "host_id", "host_name", "host_response_time", "host_response_rate", "neighbourhood_cleansed", "zipcode", "latitude", "longitude","property_type", "room_type", "accommodates", "bathrooms", "bedrooms", "beds", "amenities", "square_feet", "availability_365", "number_of_reviews", "review_scores_rating", "reviews_per_month", "instant_bookable", "cancellation_policy","minimum_nights", "cleaning_fee" )]
 colnames(rawdata)
@@ -144,7 +144,11 @@ df <- cbind(df, checkin)
 ```
 ```{r}
 # Pets Allowed
-
+Pets_Allowed <- rep(0,sample_n)
+Pets_Allowed[str_detect(df$amenities, regex("Pets Allowed", ignore_case=T))] <- 1
+Pets_Allowed <- as.factor(Pets_Allowed)
+table(Pets_Allowed)
+df <- cbind(df, Pets_Allowed)
 ```
 
 ### (7) clean square_feet
@@ -160,15 +164,33 @@ table(df$review_scores_rating)
 summary(df$review_scores_rating)
 ```
 ```{r}
-df$review_scores_rating[ 0 <= df$review_scores_rating && df$review_scores_rating<= 87] <- "bad"
-df$review_scores_rating[ 87 < df$review_scores_rating && df$review_scores_rating<= 95] <- "fair"
-df$review_scores_rating[ 95 < df$review_scores_rating && df$review_scores_rating<= 98]  <- "good"
-df$review_scores_rating[ 98 < df$review_scores_rating && df$review_scores_rating<= 100]  <- "excellent"
-table(df$review_scores_rating)
+i = 0
+for (i in 1:length(df$review_scores_rating)) {
+  if (df$review_scores_rating[i] < 87) {df$review_rating[i] <- "bad"
+  } else 
+  {
+    if (df$review_scores_rating[i] >= 87 & df$review_scores_rating[i] < 95) {
+      df$review_rating[i] <- "fair"
+    } else 
+    {if (df$review_scores_rating[i] >= 95 & df$review_scores_rating[i] < 98) {
+      df$review_rating[i] <- "good"
+    } else {df$review_rating[i] <- "excellent"}
+    }}
+  i = i + 1
+  
+}
+
+table(df$review_rating)
+
 ```
 
 ### (9) clean reviews_per_month
 ```{r}
+df$reviews_per_month[df$reviews_per_month == ""] <- 0
+
+df$reviews_per_month[is.na(df$reviews_per_month) == TRUE] <- 0
+
+summary(df$reviews_per_month)
 
 ```
 
