@@ -1,0 +1,224 @@
+---
+title: "STAT504_Project_Shi"
+author: "Seraphina Shi"
+date: "2/10/2020"
+output: html_document
+---
+
+# 0. Import Libararies 
+```{r}
+#install.packages("tidyverse")
+library(tidyverse)
+```
+
+# 1. load the dataset and keep the variables that we are interested in
+```{r}
+#setwd("../STAT504_Final_Project") #Yijie
+setwd("C:/Users/Peter Liu/Desktop/STAT423/Project/STAT504_Final_Project") #Seraphina
+#setwd("")  #Tianxin
+
+rawdata <- read.csv(file="listings.csv")
+
+rawdata <- rawdata[,c("price", "id", "name", "host_id", "host_name", "host_response_time", "host_response_rate", "neighbourhood_cleansed", "zipcode", "latitude", "longitude","property_type", "room_type", "accommodates", "bathrooms", "bedrooms", "beds", "amenities", "square_feet", "availability_365", "number_of_reviews", "review_scores_rating", "reviews_per_month", "instant_bookable", "cancellation_policy","minimum_nights", "cleaning_fee" )]
+colnames(rawdata)
+```
+
+
+# 2. Data Cleaning  
+## a. dropping duplicates  
+```{r}
+# checking duplicates
+sum(duplicated(rawdata))  # there is no duplications in this data
+```
+## b. deal with missing values & any transformations?
+```{r}
+summary(rawdata) #check if there are any missing entries
+```
+  
+Variables (host_response_time, host_response_rate, bathrooms, bedrooms, beds, square_feet, review_scores_rating, review_scores_value, reviews_per_month) has N/A values.  
+
+```{r}
+sample_n <- nrow(rawdata)
+df <- rawdata
+glimpse(df) #look variable names and types
+```
+
+### (1). clean "price", change from factor to dbl
+```{r}
+df$price <- suppressWarnings(as.double(substring(df$price, 2)))
+```
+```{r}
+#check if price transformed properly
+str(df$price)
+summary(df$price) 
+df$price[1:20]
+rawdata$price[1:20] 
+```
+```{r}
+# there is one NA in the price, check and replace it.
+which(is.na(df$price)) 
+rawdata$price[3123]
+df$price[3123] = 1000.00
+```
+```{r}
+summary(df$price)
+```
+
+### (2). Change id and host_id from int to fct
+```{r}
+df$id <- as.factor(df$id)
+df$host_id <- as.factor(df$host_id)
+```
+
+### (3). clean host_response_time
+```{r}
+str(df$host_response_time)
+```
+```{r} 
+df$host_response_time <- as.character(df$host_response_time)
+str(df$host_response_time)
+table(df$host_response_time)  
+```
+```{r}
+df$host_response_time[df$host_response_time == ""] <- "0"
+df$host_response_time[df$host_response_time == "N/A"] <- "N/A"
+df$host_response_time[df$host_response_time == "within an hour"] <- "<= 1h"
+df$host_response_time[df$host_response_time == "within a few hours"] <- "<= 5h"
+df$host_response_time[df$host_response_time == "within a day"] <- "<= 24h"
+df$host_response_time[df$host_response_time == "a few days or more"] <- "> 24h"
+df$host_response_time <- as.factor(df$host_response_time)
+table(df$host_response_time)
+```
+
+### (4). clean host_response_rate
+```{r}
+str(df$host_response_rate)
+table(df$host_response_rate)
+```
+```{r}
+df$host_response_rate <- as.character(df$host_response_rate)
+# clean N/A and missing entries
+df$host_response_rate[df$host_response_rate==""] <- "0%"
+df$host_response_rate[df$host_response_rate=="N/A"] <- "0%"  
+# convert to numbers
+df$host_response_rate = substr(df$host_response_rate,1,nchar(df$host_response_rate)-1)
+df$host_response_rate <- as.numeric(df$host_response_rate) / 100
+summary(df$host_response_rate)
+```
+
+### (5) clean bathrooms, bedrooms, beds (fill the missing entries with 0)   
+
+```{r}
+df$bathrooms[is.na(df$bathrooms)] <- 0
+df$bedrooms[is.na(df$bedrooms)] <- 0
+df$beds[is.na(df$beds)] <- 0
+summary(df$bathrooms)
+summary(df$bedrooms)
+summary(df$beds)
+```
+
+
+### (6) clean amenities
+```{r}
+df$amenities <- as.character(df$amenities)
+```
+```{r}
+# Free Parking on Premises
+parking <- rep(0, sample_n)
+parking[str_detect(df$amenities, regex("Free Parking", ignore_case=T))] <- 1
+parking <- as.factor(parking)
+table(parking)
+df <- cbind(df, parking)
+```
+```{r}
+# Washer, Dryer 
+washer <- rep(0,sample_n)
+washer[str_detect(df$amenities, regex("Washer", ignore_case=T))] <- 1
+washer <- as.factor(washer)
+table(washer)
+df <- cbind(df, washer)
+```
+```{r}
+# 24-Hour Check-in
+checkin24 <- rep(0,sample_n)
+checkin24[str_detect(df$amenities, regex("24-Hour Check-in", ignore_case=T))] <- 1
+checkin24 <- as.factor(checkin24)
+table(checkin24)
+df <- cbind(df, checkin24)
+```
+```{r}
+# Pets Allowed
+Pets_Allowed <- rep(0,sample_n)
+Pets_Allowed[str_detect(df$amenities, regex("Pets Allowed", ignore_case=T))] <- 1
+Pets_Allowed <- as.factor(Pets_Allowed)
+table(Pets_Allowed)
+df <- cbind(df, Pets_Allowed)
+```
+
+### (7) clean square_feet
+```{r}
+sum(is.na(df$square_feet))/sample_n
+```
+97.5% of observations do bot have the square feet, so we won't use this variable in our analysis. 
+
+### (8) clean review_scores_rating (fill the missing entries with 0, and change to quantiles, then treat it as factors)
+```{r}
+df$review_scores_rating[is.na(df$review_scores_rating)] <- 0
+table(df$review_scores_rating)
+summary(df$review_scores_rating)
+```
+```{r}
+i = 0
+for (i in 1:length(df$review_scores_rating)) {
+  if (df$review_scores_rating[i] < 87) {df$review_rating[i] <- "bad"
+  } else 
+  {
+    if (df$review_scores_rating[i] >= 87 & df$review_scores_rating[i] < 95) {
+      df$review_rating[i] <- "fair"
+    } else 
+    {if (df$review_scores_rating[i] >= 95 & df$review_scores_rating[i] < 98) {
+      df$review_rating[i] <- "good"
+    } else {df$review_rating[i] <- "excellent"}
+    }}
+  i = i + 1
+  
+}
+
+table(df$review_rating)
+df$review_rating <- as.factor(df$review_rating)
+```
+
+### (9) clean reviews_per_month
+```{r}
+df$reviews_per_month[df$reviews_per_month == ""] <- 0
+
+df$reviews_per_month[is.na(df$reviews_per_month) == TRUE] <- 0
+
+summary(df$reviews_per_month)
+```
+```{r}
+df <- select(df, -c("amenities","square_feet"))
+#glimpse(df)
+#summary(df)
+```
+
+# 3. Data visualization 
+Things to think about while doing data visualization:  
+    a.       outliers?  
+    b. variable selection 
+       plot variables  
+       linear?  
+    c. variables independent?   
+       pair plots?  
+       correlation between variables?  
+
+Interested Vairables:  
+price ~  
+"host_response_rate", "neighbourhood_cleansed", "property_type", "room_type", "accommodates", "bathrooms", "bedrooms", "beds", "availability_365", "number_of_reviews", "review_scores_rating", "reviews_per_month", "instant_bookable", "cancellation_policy", "minimum_nights", "cleaning_fee", "parking", "washer", "checkin24", "Pets_Allowed", "review_rating".  
+
+(21 predictors at the start)
+(originally, we are also interested in square-feet as a predictor, but more than 95% of observations don't have this information. Then we excluded it.)
+
+
+# 4. Regression  
+  model selection
