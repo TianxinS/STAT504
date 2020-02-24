@@ -13,8 +13,8 @@ library(tidyverse)
 
 # 1. load the dataset and keep the variables that we are interested in
 ```{r}
-#setwd("../STAT504_Final_Project") #Yijie
-setwd("C:/Users/Peter Liu/Desktop/STAT423/Project/STAT504_Final_Project") #Seraphina
+setwd("../STAT504_Final_Project") #Yijie
+#setwd("C:/Users/Peter Liu/Desktop/STAT423/Project/STAT504_Final_Project") #Seraphina
 #setwd("")  #Tianxin
 
 rawdata <- read.csv(file="listings.csv")
@@ -204,13 +204,18 @@ df <- select(df, -c("amenities","square_feet"))
 
 # 3. Data visualization 
 Things to think about while doing data visualization:  
-    a.       outliers?  
+    a. outliers?  
     b. variable selection 
        plot variables  
        linear?  
     c. variables independent?   
        pair plots?  
        correlation between variables?  
+
+```{r}
+summary(df)
+```
+
 
 Interested Vairables:  
 price ~  
