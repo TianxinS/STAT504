@@ -8,7 +8,9 @@ output: html_document
 # 0. Import Libararies 
 ```{r}
 #install.packages("tidyverse")
+#install.packages("corrplot")
 library(tidyverse)
+library(corrplot)
 ```
 
 # 1. load the dataset and keep the variables that we are interested in
@@ -196,6 +198,14 @@ df$reviews_per_month[is.na(df$reviews_per_month) == TRUE] <- 0
 
 summary(df$reviews_per_month)
 ```
+
+### (10) cleaning-fee
+```{r}
+df$cleaning_fee <- suppressWarnings(as.double(substring(df$cleaning_fee, 2)))
+df$cleaning_fee[is.na(df$cleaning_fee)]=0
+#summary(df$cleaning_fee)
+```
+
 ```{r}
 df <- select(df, -c("amenities","square_feet"))
 #glimpse(df)
@@ -223,6 +233,27 @@ price ~
 
 (21 predictors at the start)
 (originally, we are also interested in square-feet as a predictor, but more than 95% of observations don't have this information. Then we excluded it.)
+
+
+
+```{r}
+hist(df$price, breaks=50)
+```
+Bell-shape, unimodal, almost symmetricc (right-skewed)
+
+```{r}
+#glimpse(df)
+```
+
+```{r}
+(cor(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee")]))
+```
+```{r}
+plot(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee")])
+```
+```{r}
+corrplot(cor(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee")]), method="circle")
+```
 
 
 # 4. Regression  
