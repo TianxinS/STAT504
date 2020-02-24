@@ -14,8 +14,8 @@ library(tidyverse)
 # 1. load the dataset and keep the variables that we are interested in
 ```{r}
 #setwd("../STAT504_Final_Project") #Yijie
-setwd("C:/Users/Peter Liu/Desktop/STAT423/Project/STAT504_Final_Project") #Seraphina
-#setwd("")  #Tianxin
+#setwd("C:/Users/Peter Liu/Desktop/STAT423/Project/STAT504_Final_Project") #Seraphina
+setwd(".")  #Tianxin
 
 rawdata <- read.csv(file="listings.csv")
 
