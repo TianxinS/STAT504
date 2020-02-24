@@ -21,7 +21,7 @@ setwd("C:/Users/Peter Liu/Desktop/STAT423/Project/STAT504_Final_Project") #Serap
 
 rawdata <- read.csv(file="listings.csv")
 
-rawdata <- rawdata[,c("price", "id", "name", "host_id", "host_name", "host_response_time", "host_response_rate", "neighbourhood_cleansed", "zipcode", "latitude", "longitude","property_type", "room_type", "accommodates", "bathrooms", "bedrooms", "beds", "amenities", "square_feet", "availability_365", "number_of_reviews", "review_scores_rating", "reviews_per_month", "instant_bookable", "cancellation_policy","minimum_nights", "cleaning_fee" )]
+rawdata <- rawdata[,c("price", "id", "name", "host_id", "host_name", "host_response_time", "host_response_rate", "neighbourhood_cleansed", "zipcode", "latitude", "longitude", "room_type", "accommodates", "bathrooms", "bedrooms", "beds", "amenities", "square_feet", "availability_365", "number_of_reviews", "review_scores_rating", "reviews_per_month", "instant_bookable", "cancellation_policy","minimum_nights", "cleaning_fee" )]
 colnames(rawdata)
 ```
 
@@ -205,6 +205,12 @@ df$cleaning_fee <- suppressWarnings(as.double(substring(df$cleaning_fee, 2)))
 df$cleaning_fee[is.na(df$cleaning_fee)]=0
 #summary(df$cleaning_fee)
 ```
+### (11) cleaning neighbourhood
+```{r}
+nei = as.character( df$neighbourhood_cleansed )
+nei[nei != "Alki" & nei != "Arbor Heights" & nei != "Belltown" & nei != "Bitter Lake" & nei != "Briarcliff" & nei != "Broadview"] <- "Other"
+summary(as.factor(nei))
+```
 
 ```{r}
 df <- select(df, -c("amenities","square_feet"))
@@ -224,7 +230,7 @@ Things to think about while doing data visualization:
 
 Interested Vairables:  
 price ~  
-"host_response_rate", "neighbourhood_cleansed", "property_type", "room_type", "accommodates", "bathrooms", "bedrooms", "beds", "availability_365", "number_of_reviews", "review_scores_rating", "reviews_per_month", "instant_bookable", "cancellation_policy", "minimum_nights", "cleaning_fee", "parking", "washer", "checkin24", "Pets_Allowed", "review_rating".  
+"host_response_rate", "neighbourhood_cleansed",  "room_type", "accommodates", "bathrooms", "bedrooms", "beds", "availability_365", "number_of_reviews", "review_scores_rating", "reviews_per_month", "instant_bookable", "cancellation_policy", "minimum_nights", "cleaning_fee", "parking", "washer", "checkin24", "Pets_Allowed", "review_rating".  
 
 (21 predictors at the start)
 (originally, we are also interested in square-feet as a predictor, but more than 95% of observations don't have this information. Then we excluded it.)
@@ -247,9 +253,55 @@ Bell-shape, unimodal, almost symmetricc (right-skewed)
 plot(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee")])
 ```
 ```{r}
-corrplot(cor(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee")]), method="circle")
+corrplot(cor(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee","availability_365")]), method="circle")
 ```
+We can see that accommodates, bathrooms, bedrooms, beds, and cleaning-fee are multicollinear, so we decide to exclude all of them except accmomodates in our model (excluding bathrooms, bedrooms, beds, and cleaning-fee). 
+
+Revire-per-month and number-of-reviews are colinear, so we exclude number of reviews in our model.
+```{r}
+corrplot(cor(df[,c("price", "host_response_rate", "accommodates", "review_scores_rating", "reviews_per_month", "minimum_nights","availability_365")]), method="circle")
+```
+
+price ~  
+"host_response_rate", "neighbourhood_cleansed",  "room_type", "accommodates",  "availability_365",  "review_scores_rating", "reviews_per_month", "instant_bookable", "cancellation_policy", "minimum_nights", "parking", "washer", "checkin24", "Pets_Allowed", "review_rating".
+
+
+```{r}
+hist(df$host_response_rate, breaks=50)
+hist(df$accommodates, breaks=50)
+hist(df$review_scores_rating, breaks=50)
+hist(df$reviews_per_month, breaks=50)
+hist(df$minimum_nights, breaks=50)
+hist(df$availability_365, breaks=50)
+
+#histogram categorical variable 
+plot(df$neighbourhood_cleansed, main="Neighbourhood")
+plot(df$washer,main="Washer")
+plot(df$parking,main="Parking")
+plot(df$room_type,main="Room Type")
+plot(df$checkin24,main="24 hours check-in")
+plot(df$cancellation_policy,main="cancellation policy")
+plot(df$Pets_Allowed,main="Pets Allowed")
+plot(df$instant_bookable,main="Instant Bookable")
+```
+
+
+```{r}
+summary(df$neighbourhood_cleansed)
+```
+
+
+
 
 
 # 4. Regression  
   model selection
+```{r}
+fit1 = lm(price ~  host_response_rate + neighbourhood_cleansed + room_type+accommodates + availability_365 + review_scores_rating+ reviews_per_month+ instant_bookable + cancellation_policy + minimum_nights + parking + washer + checkin24 + Pets_Allowed + review_rating, data=df)
+summary(fit1)
+```
+
+```{r}
+fit2 = lm(log(price) ~  host_response_rate + neighbourhood_cleansed + room_type+log(accommodates) + availability_365 + review_scores_rating + reviews_per_month + instant_bookable + cancellation_policy + minimum_nights + parking + washer + checkin24 + Pets_Allowed + review_rating, data=df)
+summary(fit2)
+```
