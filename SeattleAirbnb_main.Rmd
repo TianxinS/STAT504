@@ -315,7 +315,6 @@ plot(df$room_type,main="Room Type")
 plot(df$checkin24,main="24 hours check-in")
 plot(df$cancellation_policy,main="cancellation policy")
 plot(df$Pets_Allowed,main="Pets Allowed")
-plot(df$property_type,main="Property Type")
 plot(df$instant_bookable,main="Instant Bookable")
 ```
 
@@ -336,7 +335,7 @@ summary(fit2)
 ```
 
 ```{r}
-model = lm(price~ host_response_rate + neighbourhood_cleansed + property_type+ room_type+accommodates+availability_365+review_scores_rating+reviews_per_month+ instant_bookable+cancellation_policy+minimum_nights+parking+washer+checkin24+Pets_Allowed+review_rating, data = df)
+model = lm(price~ host_response_rate + neighbourhood_cleansed + room_type+accommodates+availability_365+review_scores_rating+reviews_per_month+ instant_bookable+cancellation_policy+minimum_nights+parking+washer+checkin24+Pets_Allowed+review_rating, data = df)
 
 summary(model)
 ```
