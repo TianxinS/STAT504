@@ -207,11 +207,24 @@ df$cleaning_fee[is.na(df$cleaning_fee)]=0
 ```
 ### (11) cleaning neighbourhood
 ```{r}
-nei = as.character( df$neighbourhood_cleansed )
-nei[nei != "Alki" & nei != "Arbor Heights" & nei != "Belltown" & nei != "Bitter Lake" & nei != "Briarcliff" & nei != "Broadview"] <- "Other"
-summary(as.factor(nei))
-```
+#nei = as.character( df$neighbourhood_cleansed )
+#nei[nei != "Alki" & nei != "Arbor Heights" & nei != "Belltown" & nei != "Bitter Lake" & nei != "Briarcliff" & nei != "Broadview"] <- "Other"
+#summary(as.factor(nei))
 
+
+```
+```{r}
+
+neighbor = c("Alki", "Arbor Heights", "Belltown", "Bitter Lake", "Briarcliff","Broadview","Broadway","Central Business District","Columbia City","Crown Hill","Dunlap","East Queen Anne","First Hill", "Greenwood","Haller Lake","Industrial District","International District","Lower Queen Anne","Maple Leaf","Montlake","North College Park","North Delridge","Pike-Market","Pinehurst","Pioneer Square" ,"Portage Bay","Rainier Beach")
+
+
+list_neighbor = as.character( df$neighbourhood_cleansed )
+list_neighbor[list_neighbor != "Alki" & list_neighbor != "Arbor Heights" & list_neighbor != "Belltown" & list_neighbor != "Bitter Lake" & list_neighbor != "Briarcliff" & list_neighbor != "Broadview" & list_neighbor != "Broadway" & list_neighbor != "Central Business District" & list_neighbor != "Columbia City" & list_neighbor != "Crown Hill" & list_neighbor != "Dunlap" & list_neighbor != "East Queen Anne" & list_neighbor != "First Hill" & list_neighbor != "Greenwood" & list_neighbor != "Haller Lake" & list_neighbor != "Industrial District" & list_neighbor != "International District" & list_neighbor != "Lower Queen Anne" & list_neighbor != "Maple Leaf" & list_neighbor != "Montlake" & list_neighbor != "North College Park" & list_neighbor != "North Delridge" & list_neighbor != "Pike-Market" & list_neighbor != "Pinehurst" & list_neighbor != "Pioneer Square" & list_neighbor != "Portage Bay" & list_neighbor != "Rainier Beach"   ] <- "Other"
+summary(as.factor(list_neighbor))
+
+df$neighbourhood_group = list_neighbor
+
+```
 ```{r}
 df <- select(df, -c("amenities","square_feet"))
 #glimpse(df)
@@ -315,7 +328,10 @@ plot(df$room_type,main="Room Type")
 plot(df$checkin24,main="24 hours check-in")
 plot(df$cancellation_policy,main="cancellation policy")
 plot(df$Pets_Allowed,main="Pets Allowed")
+<<<<<<< HEAD
 # removed plot(df$property_type,main="Property Type")
+=======
+>>>>>>> 45547a58d84f562a4d7199a82471257a4d6e5389
 plot(df$instant_bookable,main="Instant Bookable")
 ```
 
@@ -326,7 +342,7 @@ plot(df$instant_bookable,main="Instant Bookable")
   model selection
 
 ```{r}
-fit1 = lm(price ~  host_response_rate + neighbourhood_cleansed + room_type+accommodates + availability_365 + review_scores_rating+ reviews_per_month+ instant_bookable + cancellation_policy + minimum_nights + parking + washer + checkin24 + Pets_Allowed + review_rating, data=df)
+fit1 = lm(price ~  host_response_rate + neighbourhood_group + room_type+accommodates + availability_365 + review_scores_rating+ reviews_per_month+ instant_bookable + cancellation_policy + minimum_nights + parking + washer + checkin24 + Pets_Allowed + review_rating, data=df)
 summary(fit1)
 ```
 
@@ -346,24 +362,14 @@ summary(df$neighbourhood_cleansed)
 ```
 
 
-```{r}
-
-neighbor = c("Alki", "Arbor Heights", "Belltown", "Bitter Lake", "Briarcliff","Broadview","Broadway","Central Business District","Columbia City","Crown Hill","Dunlap","East Queen Anne","First Hill", "Greenwood","Haller Lake","Industrial District","International District","Lower Queen Anne","Maple Leaf","Montlake","North College Park","North Delridge","Pike-Market","Pinehurst","Pioneer Square" ,"Portage Bay","Rainier Beach")
-
-
-list_neighbor = as.character( df$neighbourhood_cleansed )
-list_neighbor[list_neighbor != "Alki" & list_neighbor != "Arbor Heights" & list_neighbor != "Belltown" & list_neighbor != "Bitter Lake" & list_neighbor != "Briarcliff" & list_neighbor != "Broadview" & list_neighbor != "Broadway" & list_neighbor != "Central Business District" & list_neighbor != "Columbia City" & list_neighbor != "Crown Hill" & list_neighbor != "Dunlap" & list_neighbor != "East Queen Anne" & list_neighbor != "First Hill" & list_neighbor != "Greenwood" & list_neighbor != "Haller Lake" & list_neighbor != "Industrial District" & list_neighbor != "International District" & list_neighbor != "Lower Queen Anne" & list_neighbor != "Maple Leaf" & list_neighbor != "Montlake" & list_neighbor != "North College Park" & list_neighbor != "North Delridge" & list_neighbor != "Pike-Market" & list_neighbor != "Pinehurst" & list_neighbor != "Pioneer Square" & list_neighbor != "Portage Bay" & list_neighbor != "Rainier Beach"   ] <- "Other"
-summary(as.factor(list_neighbor))
-
-df$neighbourhood_group = list_neighbor
-
-```
-
-
 
 ```{r}
+<<<<<<< HEAD
 summary(lm(price ~ as.factor(neighbourhood_group),data = df))
 
+=======
+summary(lm(price ~ as.factor(neighbourhood_cleansed),data = df))
+>>>>>>> 45547a58d84f562a4d7199a82471257a4d6e5389
 ```
 
 ```{r}
