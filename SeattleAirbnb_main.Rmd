@@ -315,7 +315,7 @@ plot(df$room_type,main="Room Type")
 plot(df$checkin24,main="24 hours check-in")
 plot(df$cancellation_policy,main="cancellation policy")
 plot(df$Pets_Allowed,main="Pets Allowed")
-plot(df$property_type,main="Property Type")
+# removed plot(df$property_type,main="Property Type")
 plot(df$instant_bookable,main="Instant Bookable")
 ```
 
@@ -336,7 +336,7 @@ summary(fit2)
 ```
 
 ```{r}
-model = lm(price~ host_response_rate + neighbourhood_cleansed + property_type+ room_type+accommodates+availability_365+review_scores_rating+reviews_per_month+ instant_bookable+cancellation_policy+minimum_nights+parking+washer+checkin24+Pets_Allowed+review_rating, data = df)
+model = lm(price~ host_response_rate + neighbourhood_cleansed + room_type+accommodates+availability_365+review_scores_rating+reviews_per_month+ instant_bookable+cancellation_policy+minimum_nights+parking+washer+checkin24+Pets_Allowed+review_rating, data = df)
 
 summary(model)
 ```
@@ -362,6 +362,24 @@ df$neighbourhood_group = list_neighbor
 
 
 ```{r}
-summary(lm(price ~ as.factor(neighbourhood_cleansed),data = df))
+summary(lm(price ~ as.factor(neighbourhood_group),data = df))
+
+```
+
+```{r}
+summary(df)
+```
+
+
+```{r}
+# random forest testing
+sample.a = sample(nrow(df), 0.75*nrow(df))
+train.a = df[sample.a,]
+test.a = df[-sample.a,]
+library(randomForest)
+model.a = randomForest(price~host_response_rate +neighbourhood_group +room_type+bathrooms+bedrooms +availability_365+number_of_reviews+minimum_nights, data=train.a,mtry=3,importance=TRUE, na.action=na.omit)
+model.a
+#prediction = predict(model, newdata=test)
+#table(prediction, test$DEFAULT)
 
 ```
