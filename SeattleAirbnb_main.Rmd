@@ -336,12 +336,12 @@ plot(df$instant_bookable,main="Instant Bookable")
   model selection
 
 ```{r}
-fit1 = lm(price ~  host_response_rate + neighbourhood_cleansed + room_type+accommodates + availability_365 + review_scores_rating+ reviews_per_month+ instant_bookable + cancellation_policy + minimum_nights + parking + washer + checkin24 + Pets_Allowed + review_rating, data=df)
+fit1 = lm(price ~  host_response_rate + neighbourhood_group + room_type+accommodates + availability_365 + review_scores_rating+ reviews_per_month+ instant_bookable + cancellation_policy + minimum_nights + parking + washer + checkin24 + Pets_Allowed + review_rating, data=df)
 summary(fit1)
 ```
 
 ```{r}
-fit2 = lm(log(price) ~  host_response_rate + neighbourhood_cleansed + room_type+log(accommodates) + availability_365 + review_scores_rating + reviews_per_month + instant_bookable + cancellation_policy + minimum_nights + parking + washer + checkin24 + Pets_Allowed + review_rating, data=df)
+fit2 = lm(log(price) ~  host_response_rate + neighbourhood_group + room_type+log(accommodates) + availability_365 + review_scores_rating + reviews_per_month + instant_bookable + cancellation_policy + minimum_nights + parking + washer + checkin24 + Pets_Allowed + review_rating, data=df)
 summary(fit2)
 ```
 
