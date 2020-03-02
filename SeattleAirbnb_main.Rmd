@@ -2,7 +2,9 @@
 title: "STAT504_Project_Shi"
 author: "Seraphina Shi"
 date: "2/10/2020"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 # 0. Import Libararies 
@@ -18,7 +20,7 @@ library(MASS)
 # 1. load the dataset and keep the variables that we are interested in
 ```{r}
 #setwd("../STAT504_Final_Project") #Yijie
-#setwd("C:/Users/Peter Liu/Desktop/STAT423/Project/STAT504_Final_Project") #Seraphina
+setwd("C:/Users/Peter Liu/Desktop/STAT423/Project/STAT504_Final_Project") #Seraphina
 setwd(".")  #Tianxin
 
 rawdata <- read.csv(file="listings.csv")
@@ -238,8 +240,9 @@ price ~
 
 
 
-```{r}
-hist(df$price, breaks=50)
+```{r 1_prices_of_airbnb}
+hist(df$price, breaks=50, col="navajowhite1", main="Prices of Airbnb places", probability=T, xlab="prices") 
+#some colors: #lavender #lavenderblush  #lightblue1 #lightcyan #lightgoldenrodyellow #mistyrose #navajowhite1 
 ```
 Bell-shape, unimodal, almost symmetricc (right-skewed)
 
@@ -250,12 +253,13 @@ Bell-shape, unimodal, almost symmetricc (right-skewed)
 ```{r}
 (cor(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee")]))
 ```
-```{r}
-plot(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee")])
+```{r 2_pair_plot_of_all_interested_continuous_var}
+plot(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee")],  pch=20, col="royalblue4")
 ```
-```{r}
-corrplot(cor(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee","availability_365")]), method="circle")
+```{r 3_corrplot_of_all_interested_continuous_var}
+corrplot(cor(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee","availability_365")]), method="color", number.cex = .7, addCoef.col = "white", type="upper", diag = FALSE, tl.col = "black",  tl.cex=.8, tl.srt=90 )
 ```
+
 We can see that accommodates, bathrooms, bedrooms, beds, and cleaning-fee are multicollinear, so we decide to exclude all of them except accmomodates in our model (excluding bathrooms, bedrooms, beds, and cleaning-fee). 
 
 Revire-per-month and number-of-reviews are colinear, so we exclude number of reviews in our model.
@@ -263,11 +267,11 @@ Revire-per-month and number-of-reviews are colinear, so we exclude number of rev
 review-score-rating is highly correlated with review-rating, keep review0rating.
 
 Minimun nights have too many zeros, we are not interested in it anymore .
-```{r}
-corrplot(cor(df[,c("price", "host_response_rate", "accommodates",  "reviews_per_month", "availability_365")]), method="circle")
+```{r 4_corrplot_of_final_continous_var}
+corrplot(cor(df[,c("price", "host_response_rate", "accommodates",  "reviews_per_month", "availability_365")]), , method="color", number.cex = .7, addCoef.col = "white", type="upper", diag = FALSE, tl.col = "black",  tl.cex=.8, tl.srt=90)
 ```
-```{r}
-plot(df[,c("price", "host_response_rate", "accommodates", "reviews_per_month","availability_365")])
+```{r 5_pair_plot_of_final_continous_var}
+plot(df[,c("price", "host_response_rate", "accommodates", "reviews_per_month","availability_365")], pch=20, col="royalblue4")
 ```
 
 
@@ -275,30 +279,26 @@ price ~
 "host_response_rate", "neighbourhood_group",  "room_type", "accommodates",  "availability_365",  "reviews_per_month", "instant_bookable", "cancellation_policy", "minimum_nights", "parking", "washer", "checkin24", "Pets_Allowed", "review_rating".
 
 
-```{r}
+```{r 6_hist_of_all_vars_in_model}
 #histogram numerical variable 
-hist(df$host_response_rate, breaks=50, main="host_response_rate")
-hist(df$accommodates, breaks=50,  main="ccommodates")
-hist(df$reviews_per_month, breaks=50, main="reviews_per_month")
-hist(df$minimum_nights, breaks=50, main="minimum_nights")
-hist(df$availability_365, breaks=50, main="availability_365")
+hist(df$host_response_rate, breaks=30, main="host_response_rate", col="navajowhite1", probability=T)
+hist(df$accommodates, breaks=30,  main="Acommodates", col="navajowhite1", probability=T,, xlim=c(0,15))
+hist(df$reviews_per_month, breaks=30, main="reviews_per_month", col="navajowhite1", probability=T)
+hist(df$minimum_nights, breaks=30, main="minimum_nights", col="navajowhite1", probability=T)
+hist(df$availability_365, breaks=30, main="availability_365", col="navajowhite1", probability=T, xlim=c(0,400))
 
 #histogram categorical variable 
-plot(df$neighbourhood_group, main="Neighbourhood")
-plot(df$washer,main="Washer")
-plot(df$parking,main="Parking")
-plot(df$room_type,main="Room Type")
-plot(df$checkin24,main="24 hours check-in")
-plot(df$cancellation_policy,main="cancellation policy")
-plot(df$Pets_Allowed,main="Pets Allowed")
-plot(df$instant_bookable,main="Instant Bookable")
-plot(df$review_rating, main="review rating")
+plot(df$neighbourhood_group, main="Neighbourhood", col="lightsteelblue1")
+plot(df$washer,main="Washer", col="lightsteelblue1")
+plot(df$parking,main="Parking", col="lightsteelblue1")
+plot(df$room_type,main="Room Type", col="lightsteelblue1")
+plot(df$checkin24,main="24 hours check-in", col="lightsteelblue1")
+plot(df$cancellation_policy,main="cancellation policy", col="lightsteelblue1")
+plot(df$Pets_Allowed,main="Pets Allowed", col="lightsteelblue1")
+plot(df$instant_bookable,main="Instant Bookable", col="lightsteelblue1")
+plot(df$review_rating, main="review rating", col="lightsteelblue1")
 ```
 
-
-```{r}
-corrplot(cor(df[,c("price", "host_response_rate", "accommodates",  "reviews_per_month", "minimum_nights")]), method="circle")
-```
 
 # 4. Regression  
   model selection
@@ -310,39 +310,66 @@ fit1 = lm(price ~  host_response_rate + neighbourhood_group + room_type+accommod
 summary(fit1)
 ```
 
-```{r}
+```{r 7_coxbox}
 boxcox(fit1)$x[which.max(boxcox(fit1)$y)]
-boxcox(fit1)
 ```
 
-```{r}
-fit2 <- lm(price^(-0.2) ~ host_response_rate + neighbourhood_group + accommodates * room_type * reviews_per_month + availability_365 + instant_bookable + cancellation_policy + parking + washer + checkin24 + Pets_Allowed + review_rating, data = df_reg)
-#neighbourhood_group + accommodates * room_type * reviews_per_month + host_response_rate + review_rating + availability_365 + cancellation_policy + checkin24 + instant_bookable,
-summary(fit2)
-plot(fit2)
+```{r 8_plot_fit2_noIntrct}
+fit2_noIntrct <- lm(price^(-0.2) ~ neighbourhood_group + host_response_rate  + accommodates + room_type + reviews_per_month + availability_365 + instant_bookable + cancellation_policy + parking + washer + checkin24 + Pets_Allowed + review_rating, data = df_reg)
+summary(fit2_noIntrct)
+plot(fit2_noIntrct, pch=20,col="royalblue4")
 ```
-
+```{r 9_plot_fit2_Intrct}
+fit2_Intrct <- lm(price^(-0.2) ~ neighbourhood_group + host_response_rate  + accommodates + room_type + reviews_per_month + availability_365 + instant_bookable + cancellation_policy + parking + washer + checkin24 + Pets_Allowed + review_rating
+                  + host_response_rate:accommodates + host_response_rate:room_type + host_response_rate:reviews_per_month + host_response_rate:availability_365 + host_response_rate:instant_bookable + host_response_rate:cancellation_policy + host_response_rate:parking + host_response_rate:washer + host_response_rate:checkin24 + host_response_rate:Pets_Allowed + host_response_rate:review_rating 
+                  + accommodates:room_type + accommodates:reviews_per_month + accommodates:availability_365 + accommodates:instant_bookable + accommodates:cancellation_policy + accommodates:parking + accommodates:washer + accommodates:checkin24 + accommodates:Pets_Allowed + accommodates:review_rating 
+                  + room_type:reviews_per_month + room_type:availability_365 + room_type:instant_bookable + room_type:cancellation_policy + room_type:parking + room_type:washer + room_type:checkin24 + room_type:Pets_Allowed + room_type:review_rating
+                  + reviews_per_month:availability_365 + reviews_per_month:instant_bookable + reviews_per_month:cancellation_policy + reviews_per_month:parking + reviews_per_month:washer + reviews_per_month:checkin24 + reviews_per_month:Pets_Allowed + reviews_per_month:review_rating
+                  + availability_365:instant_bookable + availability_365:cancellation_policy + availability_365:parking + availability_365:washer + availability_365:checkin24 + availability_365:Pets_Allowed + availability_365:review_rating
+                  + instant_bookable:cancellation_policy + instant_bookable:parking + instant_bookable:washer + instant_bookable:checkin24 + instant_bookable:Pets_Allowed + instant_bookable:review_rating
+                  + cancellation_policy:parking + cancellation_policy:washer + cancellation_policy:checkin24 + cancellation_policy:Pets_Allowed + cancellation_policy:review_rating
+                  + parking:washer + parking:checkin24 + parking:Pets_Allowed + parking:review_rating
+                  + washer:checkin24 + washer:Pets_Allowed + washer:review_rating
+                  + checkin24:Pets_Allowed + checkin24:review_rating
+                  + Pets_Allowed:review_rating,data = df_reg)
+#summary(fit2_Intrct)
+plot(fit2_Intrct, pch=20,col="palegreen4")
+```
 
 
 ```{r}
 n_sample <- nrow(df_reg)
 fit0 <- lm(price^(-0.2)~1,data=df_reg)
 # BIC: step(fit0, dir="forward", k=log(n_sample),scope=list(upper=fit2,lower=fit0))
-step(fit0, dir="forward",scope=list(upper=fit2,lower=fit0))
-
-
+fit3_noIntrct <- step(fit0, dir="forward",scope=list(upper=fit2_noIntrct,lower=fit0))
+fit3_Intrct <- step(fit0, dir="forward",scope=list(upper=fit2_Intrct,lower=fit0))
+```
+```{r 10_plot_fit3_noIntrct}
+summary(fit3_noIntrct)
+plot(fit3_noIntrct, pch=20,col="royalblue4")
+```
+```{r 11_plot_fit3_Intrct}
+summary(fit3_Intrct)
+plot(fit3_Intrct, pch=20,col="palegreen4")
+```
+```{r}
+anova(fit3_noIntrct, fit3_Intrct)
 ```
 
-```{r}
-subsets <- regsubsets(price^(-0.2) ~ host_response_rate + neighbourhood_group + accommodates * room_type * reviews_per_month + availability_365 + instant_bookable + cancellation_policy + parking + washer + checkin24 + Pets_Allowed + review_rating, data = df_reg,nvmax = 20)
-summary(subsets)
 
-bsubsets <- summary(subsets)
-par(mfrow = c(2,2))
-plot(bsubsets$bic) # BIC, AIC not implemented :(
-plot(bsubsets$cp) # Mallow's Cp
-plot(bsubsets$adjr2) # adjusted R squared
-plot(bsubsets$rsq) # R squared
+
+
+
+```{r}
+#subsets <- regsubsets(price^(-0.2) ~ host_response_rate + neighbourhood_group + accommodates * room_type * reviews_per_month + availability_365 + instant_bookable + cancellation_policy + parking + washer + checkin24 + Pets_Allowed + review_rating, data = df_reg,nvmax = 20)
+#summary(subsets)
+
+#bsubsets <- summary(subsets)
+#par(mfrow = c(2,2))
+#plot(bsubsets$bic) # BIC, AIC not implemented :(
+#plot(bsubsets$cp) # Mallow's Cp
+#plot(bsubsets$adjr2) # adjusted R squared
+#plot(bsubsets$rsq) # R squared
 
 #BIC(lm(FoHF ~ FIA + ED + GM + CTA,data = FoHF))
 
@@ -351,24 +378,25 @@ plot(bsubsets$rsq) # R squared
 
 ```{r}
 # linear regression derived from subsets
-fit3 <- lm(price^(-0.2) ~ neighbourhood_group + accommodates + room_type + reviews_per_month + accommodates:room_type + accommodates:reviews_per_month + host_response_rate + review_rating + availability_365 + checkin24, data = df_reg)
+#fit3 <- lm(price^(-0.2) ~ neighbourhood_group + accommodates + room_type + reviews_per_month + accommodates:room_type + accommodates:reviews_per_month + host_response_rate + review_rating + availability_365 + checkin24, data = df_reg)
 #neighbourhood_group + accommodates * room_type * reviews_per_month + host_response_rate + review_rating + availability_365 + cancellation_policy + checkin24 + instant_bookable,
-summary(fit3)
-plot(fit3)
+#summary(fit3)
+
+#plot(fit3)
 
 ```
 
 ```{r}
 # final decision
 # linear regression derived from AIC forward
-fit4 <- lm(formula = price^(-0.2) ~ accommodates + room_type + neighbourhood_group + 
-    reviews_per_month + host_response_rate + review_rating + 
-    availability_365 + checkin24 + cancellation_policy + instant_bookable + 
-    accommodates:reviews_per_month + accommodates:room_type, 
-    data = df_reg)
+#fit4 <- lm(formula = price^(-0.2) ~ accommodates + room_type + neighbourhood_group + 
+#    reviews_per_month + host_response_rate + review_rating + 
+#    availability_365 + checkin24 + cancellation_policy + instant_bookable + 
+#    accommodates:reviews_per_month + accommodates:room_type, 
+#    data = df_reg)
 
-summary(fit4)
-plot(fit4)
+#summary(fit4)
+#plot(fit4)
 ```
 
 
