@@ -1,0 +1,402 @@
+---
+title: "STAT504_Project_Shi"
+author: "Seraphina Shi"
+date: "2/10/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+# 0. Import Libararies 
+```{r}
+#install.packages("tidyverse")
+#install.packages("corrplot")
+library(tidyverse)
+library(corrplot)
+library(leaps)
+library(MASS)
+```
+
+# 1. load the dataset and keep the variables that we are interested in
+```{r}
+setwd("../STAT504_Final_Project") #Yijie
+#setwd("C:/Users/Peter Liu/Desktop/STAT423/Project/STAT504_Final_Project") #Seraphina
+#setwd(".")  #Tianxin
+
+rawdata <- read.csv(file="listings.csv")
+
+rawdata <- rawdata[,c("price", "id", "name", "host_id", "host_name", "host_response_time", "host_response_rate", "neighbourhood_cleansed", "zipcode", "latitude", "longitude", "room_type", "accommodates", "bathrooms", "bedrooms", "beds", "amenities", "square_feet", "availability_365", "number_of_reviews", "review_scores_rating", "reviews_per_month", "instant_bookable", "cancellation_policy","minimum_nights", "cleaning_fee" )]
+colnames(rawdata)
+```
+
+
+# 2. Data Cleaning  
+## a. dropping duplicates  
+```{r}
+# checking duplicates
+sum(duplicated(rawdata))  # there is no duplications in this data
+```
+## b. deal with missing values & any transformations?
+```{r}
+summary(rawdata) #check if there are any missing entries
+```
+  
+Variables (host_response_time, host_response_rate, bathrooms, bedrooms, beds, square_feet, review_scores_rating, review_scores_value, reviews_per_month) has N/A values.  
+
+```{r}
+sample_n <- nrow(rawdata)
+df <- rawdata
+glimpse(df) #look variable names and types
+```
+
+### (1). clean "price", change from factor to dbl
+```{r}
+df$price <- suppressWarnings(as.double(substring(df$price, 2)))
+```
+```{r}
+#check if price transformed properly
+str(df$price)
+summary(df$price) 
+df$price[1:20]
+rawdata$price[1:20] 
+```
+```{r}
+# there is one NA in the price, check and replace it.
+which(is.na(df$price)) 
+rawdata$price[3123]
+df$price[3123] = 1000.00
+```
+```{r}
+summary(df$price)
+```
+
+### (2). Change id and host_id from int to fct
+```{r}
+df$id <- as.factor(df$id)
+df$host_id <- as.factor(df$host_id)
+```
+
+### (3). clean host_response_time
+```{r}
+str(df$host_response_time)
+```
+```{r} 
+df$host_response_time <- as.character(df$host_response_time)
+str(df$host_response_time)
+table(df$host_response_time)  
+```
+```{r}
+df$host_response_time[df$host_response_time == ""] <- "0"
+df$host_response_time[df$host_response_time == "N/A"] <- "N/A"
+df$host_response_time[df$host_response_time == "within an hour"] <- "<= 1h"
+df$host_response_time[df$host_response_time == "within a few hours"] <- "<= 5h"
+df$host_response_time[df$host_response_time == "within a day"] <- "<= 24h"
+df$host_response_time[df$host_response_time == "a few days or more"] <- "> 24h"
+df$host_response_time <- as.factor(df$host_response_time)
+table(df$host_response_time)
+```
+
+### (4). clean host_response_rate
+```{r}
+str(df$host_response_rate)
+table(df$host_response_rate)
+```
+```{r}
+df$host_response_rate <- as.character(df$host_response_rate)
+# clean N/A and missing entries
+df$host_response_rate[df$host_response_rate==""] <- "0%"
+df$host_response_rate[df$host_response_rate=="N/A"] <- "0%"  
+# convert to numbers
+df$host_response_rate = substr(df$host_response_rate,1,nchar(df$host_response_rate)-1)
+df$host_response_rate <- as.numeric(df$host_response_rate) / 100
+summary(df$host_response_rate)
+```
+
+### (5) clean bathrooms, bedrooms, beds (fill the missing entries with 0)   
+
+```{r}
+df$bathrooms[is.na(df$bathrooms)] <- 0
+df$bedrooms[is.na(df$bedrooms)] <- 0
+df$beds[is.na(df$beds)] <- 0
+summary(df$bathrooms)
+summary(df$bedrooms)
+summary(df$beds)
+```
+
+
+### (6) clean amenities
+```{r}
+df$amenities <- as.character(df$amenities)
+```
+```{r}
+# Free Parking on Premises
+parking <- rep(0, sample_n)
+parking[str_detect(df$amenities, regex("Free Parking", ignore_case=T))] <- 1
+parking <- as.factor(parking)
+table(parking)
+df <- cbind(df, parking)
+```
+```{r}
+# Washer, Dryer 
+washer <- rep(0,sample_n)
+washer[str_detect(df$amenities, regex("Washer", ignore_case=T))] <- 1
+washer <- as.factor(washer)
+table(washer)
+df <- cbind(df, washer)
+```
+```{r}
+# 24-Hour Check-in
+checkin24 <- rep(0,sample_n)
+checkin24[str_detect(df$amenities, regex("24-Hour Check-in", ignore_case=T))] <- 1
+checkin24 <- as.factor(checkin24)
+table(checkin24)
+df <- cbind(df, checkin24)
+```
+```{r}
+# Pets Allowed
+Pets_Allowed <- rep(0,sample_n)
+Pets_Allowed[str_detect(df$amenities, regex("Pets Allowed", ignore_case=T))] <- 1
+Pets_Allowed <- as.factor(Pets_Allowed)
+table(Pets_Allowed)
+df <- cbind(df, Pets_Allowed)
+```
+
+### (7) clean square_feet
+```{r}
+sum(is.na(df$square_feet))/sample_n
+```
+97.5% of observations do bot have the square feet, so we won't use this variable in our analysis. 
+
+### (8) clean review_scores_rating (fill the missing entries with 0, and change to quantiles, then treat it as factors)
+```{r}
+df$review_scores_rating[is.na(df$review_scores_rating)] <- 0
+table(df$review_scores_rating)
+summary(df$review_scores_rating)
+```
+```{r}
+i = 0
+for (i in 1:length(df$review_scores_rating)) {
+  if (df$review_scores_rating[i] < 87) {df$review_rating[i] <- "bad"
+  } else 
+  {
+    if (df$review_scores_rating[i] >= 87 & df$review_scores_rating[i] < 95) {
+      df$review_rating[i] <- "fair"
+    } else 
+    {if (df$review_scores_rating[i] >= 95 & df$review_scores_rating[i] < 98) {
+      df$review_rating[i] <- "good"
+    } else {df$review_rating[i] <- "excellent"}
+    }}
+  i = i + 1
+  
+}
+
+table(df$review_rating)
+df$review_rating <- as.factor(df$review_rating)
+```
+
+### (9) clean reviews_per_month
+```{r}
+df$reviews_per_month[df$reviews_per_month == ""] <- 0
+
+df$reviews_per_month[is.na(df$reviews_per_month) == TRUE] <- 0
+
+summary(df$reviews_per_month)
+```
+
+### (10) cleaning-fee
+```{r}
+df$cleaning_fee <- suppressWarnings(as.double(substring(df$cleaning_fee, 2)))
+df$cleaning_fee[is.na(df$cleaning_fee)]=0
+#summary(df$cleaning_fee)
+```
+### (11) cleaning neighbourhood
+```{r}
+
+neighbor = c("Alki", "Arbor Heights", "Belltown", "Bitter Lake", "Briarcliff","Broadview","Broadway","Central Business District","Columbia City","Crown Hill","Dunlap","East Queen Anne","First Hill", "Greenwood","Haller Lake","Industrial District","International District","Lower Queen Anne","Maple Leaf","Montlake","North College Park","North Delridge","Pike-Market","Pinehurst","Pioneer Square" ,"Portage Bay","Rainier Beach")
+
+
+list_neighbor = as.character( df$neighbourhood_cleansed )
+list_neighbor[list_neighbor != "Alki" & list_neighbor != "Arbor Heights" & list_neighbor != "Bitter Lake" & list_neighbor != "Briarcliff" & list_neighbor != "Broadview" & list_neighbor != "Broadway" & list_neighbor != "Central Business District" & list_neighbor != "Columbia City" & list_neighbor != "Crown Hill" & list_neighbor != "Dunlap" & list_neighbor != "Greenwood" & list_neighbor != "Haller Lake" & list_neighbor != "Industrial District" & list_neighbor != "International District" & list_neighbor != "Lower Queen Anne" & list_neighbor != "Maple Leaf" & list_neighbor != "Montlake" & list_neighbor != "North College Park" & list_neighbor != "North Delridge" & list_neighbor != "Pike-Market" & list_neighbor != "Pinehurst" & list_neighbor != "Pioneer Square" & list_neighbor != "Portage Bay" & list_neighbor != "Rainier Beach"   ] <- "Other"
+
+df$neighbourhood_group = as.factor(list_neighbor)
+```
+
+# 3. Data visualization 
+Things to think about while doing data visualization:  
+    a.       outliers?  
+    b. variable selection 
+       plot variables  
+       linear?  
+    c. variables independent?   
+       pair plots?  
+       correlation between variables?  
+
+Interested Vairables:  
+price ~  
+"host_response_rate", "neighbourhood_cleansed",  "room_type", "accommodates", "bathrooms", "bedrooms", "beds", "availability_365", "number_of_reviews", "review_scores_rating", "reviews_per_month", "instant_bookable", "cancellation_policy", "minimum_nights", "cleaning_fee", "parking", "washer", "checkin24", "Pets_Allowed", "review_rating".  
+
+(21 predictors at the start)
+(originally, we are also interested in square-feet as a predictor, but more than 95% of observations don't have this information. Then we excluded it.)
+
+
+
+```{r 1_prices_of_airbnb}
+hist(df$price, breaks=50, col="navajowhite1", main="Prices of Airbnb places", probability=T, xlab="prices") 
+#some colors: #lavender #lavenderblush  #lightblue1 #lightcyan #lightgoldenrodyellow #mistyrose #navajowhite1 
+```
+Bell-shape, unimodal, almost symmetricc (right-skewed)
+
+```{r}
+#glimpse(df)
+```
+
+```{r}
+(cor(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee")]))
+```
+```{r 2_pair_plot_of_all_interested_continuous_var}
+plot(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee")],  pch=20, col="royalblue4")
+```
+```{r 3_corrplot_of_all_interested_continuous_var}
+corrplot(cor(df[,c("price", "host_response_rate", "accommodates", "bathrooms", "bedrooms", "beds", "number_of_reviews", "review_scores_rating", "reviews_per_month", "minimum_nights", "cleaning_fee","availability_365")]), method="color", number.cex = .7, addCoef.col = "white", type="upper", diag = FALSE, tl.col = "black",  tl.cex=.8, tl.srt=90 )
+```
+
+We can see that accommodates, bathrooms, bedrooms, beds, and cleaning-fee are multicollinear, so we decide to exclude all of them except accmomodates in our model (excluding bathrooms, bedrooms, beds, and cleaning-fee). 
+
+Revire-per-month and number-of-reviews are colinear, so we exclude number of reviews in our model.
+
+review-score-rating is highly correlated with review-rating, keep review0rating.
+
+Minimun nights have too many zeros, we are not interested in it anymore .
+```{r 4_corrplot_of_final_continous_var}
+corrplot(cor(df[,c("price", "host_response_rate", "accommodates",  "reviews_per_month", "availability_365")]), , method="color", number.cex = .7, addCoef.col = "white", type="upper", diag = FALSE, tl.col = "black",  tl.cex=.8, tl.srt=90)
+```
+```{r 5_pair_plot_of_final_continous_var}
+plot(df[,c("price", "host_response_rate", "accommodates", "reviews_per_month","availability_365")], pch=20, col="royalblue4")
+```
+
+
+price ~  
+"host_response_rate", "neighbourhood_group",  "room_type", "accommodates",  "availability_365",  "reviews_per_month", "instant_bookable", "cancellation_policy", "minimum_nights", "parking", "washer", "checkin24", "Pets_Allowed", "review_rating".
+
+
+```{r 6_hist_of_all_vars_in_model}
+#histogram numerical variable 
+hist(df$host_response_rate, breaks=30, main="host_response_rate", col="navajowhite1", probability=T)
+hist(df$accommodates, breaks=30,  main="Acommodates", col="navajowhite1", probability=T,, xlim=c(0,15))
+hist(df$reviews_per_month, breaks=30, main="reviews_per_month", col="navajowhite1", probability=T)
+hist(df$minimum_nights, breaks=30, main="minimum_nights", col="navajowhite1", probability=T)
+hist(df$availability_365, breaks=30, main="availability_365", col="navajowhite1", probability=T, xlim=c(0,400))
+
+#histogram categorical variable 
+plot(df$neighbourhood_group, main="Neighbourhood", col="lightsteelblue1")
+plot(df$washer,main="Washer", col="lightsteelblue1")
+plot(df$parking,main="Parking", col="lightsteelblue1")
+plot(df$room_type,main="Room Type", col="lightsteelblue1")
+plot(df$checkin24,main="24 hours check-in", col="lightsteelblue1")
+plot(df$cancellation_policy,main="cancellation policy", col="lightsteelblue1")
+plot(df$Pets_Allowed,main="Pets Allowed", col="lightsteelblue1")
+plot(df$instant_bookable,main="Instant Bookable", col="lightsteelblue1")
+plot(df$review_rating, main="review rating", col="lightsteelblue1")
+```
+
+
+# 4. Regression  
+  model selection
+
+```{r}
+df_reg <- df[,c("price",  "host_response_rate", "neighbourhood_group", "room_type","accommodates", "availability_365", "reviews_per_month", "instant_bookable", "cancellation_policy", "parking", "washer", "checkin24", "Pets_Allowed", "review_rating")]
+
+fit1 = lm(price ~  host_response_rate + neighbourhood_group + room_type+accommodates + availability_365 + reviews_per_month+ instant_bookable + cancellation_policy + parking + washer + checkin24 + Pets_Allowed + review_rating, data=df_reg)
+summary(fit1)
+```
+
+```{r 7_coxbox}
+boxcox(fit1)$x[which.max(boxcox(fit1)$y)]
+```
+
+```{r 8_plot_fit2_noIntrct}
+fit2_noIntrct <- lm(price^(-0.2) ~ neighbourhood_group + host_response_rate  + accommodates + room_type + reviews_per_month + availability_365 + instant_bookable + cancellation_policy + parking + washer + checkin24 + Pets_Allowed + review_rating, data = df_reg)
+summary(fit2_noIntrct)
+plot(fit2_noIntrct, pch=20,col="royalblue4")
+```
+```{r 9_plot_fit2_Intrct}
+fit2_Intrct <- lm(price^(-0.2) ~ neighbourhood_group + host_response_rate  + accommodates + room_type + reviews_per_month + availability_365 + instant_bookable + cancellation_policy + parking + washer + checkin24 + Pets_Allowed + review_rating
+                  + host_response_rate:accommodates + host_response_rate:room_type + host_response_rate:reviews_per_month + host_response_rate:availability_365 + host_response_rate:instant_bookable + host_response_rate:cancellation_policy + host_response_rate:parking + host_response_rate:washer + host_response_rate:checkin24 + host_response_rate:Pets_Allowed + host_response_rate:review_rating 
+                  + accommodates:room_type + accommodates:reviews_per_month + accommodates:availability_365 + accommodates:instant_bookable + accommodates:cancellation_policy + accommodates:parking + accommodates:washer + accommodates:checkin24 + accommodates:Pets_Allowed + accommodates:review_rating 
+                  + room_type:reviews_per_month + room_type:availability_365 + room_type:instant_bookable + room_type:cancellation_policy + room_type:parking + room_type:washer + room_type:checkin24 + room_type:Pets_Allowed + room_type:review_rating
+                  + reviews_per_month:availability_365 + reviews_per_month:instant_bookable + reviews_per_month:cancellation_policy + reviews_per_month:parking + reviews_per_month:washer + reviews_per_month:checkin24 + reviews_per_month:Pets_Allowed + reviews_per_month:review_rating
+                  + availability_365:instant_bookable + availability_365:cancellation_policy + availability_365:parking + availability_365:washer + availability_365:checkin24 + availability_365:Pets_Allowed + availability_365:review_rating
+                  + instant_bookable:cancellation_policy + instant_bookable:parking + instant_bookable:washer + instant_bookable:checkin24 + instant_bookable:Pets_Allowed + instant_bookable:review_rating
+                  + cancellation_policy:parking + cancellation_policy:washer + cancellation_policy:checkin24 + cancellation_policy:Pets_Allowed + cancellation_policy:review_rating
+                  + parking:washer + parking:checkin24 + parking:Pets_Allowed + parking:review_rating
+                  + washer:checkin24 + washer:Pets_Allowed + washer:review_rating
+                  + checkin24:Pets_Allowed + checkin24:review_rating
+                  + Pets_Allowed:review_rating,data = df_reg)
+#summary(fit2_Intrct)
+plot(fit2_Intrct, pch=20,col="palegreen4")
+```
+
+
+```{r}
+n_sample <- nrow(df_reg)
+fit0 <- lm(price^(-0.2)~1,data=df_reg)
+# BIC: step(fit0, dir="forward", k=log(n_sample),scope=list(upper=fit2,lower=fit0))
+fit3_noIntrct <- step(fit0, dir="forward",scope=list(upper=fit2_noIntrct,lower=fit0))
+fit3_Intrct <- step(fit0, dir="forward",scope=list(upper=fit2_Intrct,lower=fit0))
+```
+```{r 10_plot_fit3_noIntrct}
+summary(fit3_noIntrct)
+plot(fit3_noIntrct, pch=20,col="royalblue4")
+```
+```{r 11_plot_fit3_Intrct}
+summary(fit3_Intrct)
+plot(fit3_Intrct, pch=20,col="palegreen4")
+```
+```{r}
+anova(fit3_noIntrct, fit3_Intrct)
+```
+
+
+
+
+
+```{r}
+#subsets <- regsubsets(price^(-0.2) ~ host_response_rate + neighbourhood_group + accommodates * room_type * reviews_per_month + availability_365 + instant_bookable + cancellation_policy + parking + washer + checkin24 + Pets_Allowed + review_rating, data = df_reg,nvmax = 20)
+#summary(subsets)
+
+#bsubsets <- summary(subsets)
+#par(mfrow = c(2,2))
+#plot(bsubsets$bic) # BIC, AIC not implemented :(
+#plot(bsubsets$cp) # Mallow's Cp
+#plot(bsubsets$adjr2) # adjusted R squared
+#plot(bsubsets$rsq) # R squared
+
+#BIC(lm(FoHF ~ FIA + ED + GM + CTA,data = FoHF))
+
+```
+
+
+```{r}
+# linear regression derived from subsets
+#fit3 <- lm(price^(-0.2) ~ neighbourhood_group + accommodates + room_type + reviews_per_month + accommodates:room_type + accommodates:reviews_per_month + host_response_rate + review_rating + availability_365 + checkin24, data = df_reg)
+#neighbourhood_group + accommodates * room_type * reviews_per_month + host_response_rate + review_rating + availability_365 + cancellation_policy + checkin24 + instant_bookable,
+#summary(fit3)
+
+#plot(fit3)
+
+```
+
+```{r}
+# final decision
+# linear regression derived from AIC forward
+#fit4 <- lm(formula = price^(-0.2) ~ accommodates + room_type + neighbourhood_group + 
+#    reviews_per_month + host_response_rate + review_rating + 
+#    availability_365 + checkin24 + cancellation_policy + instant_bookable + 
+#    accommodates:reviews_per_month + accommodates:room_type, 
+#    data = df_reg)
+
+#summary(fit4)
+#plot(fit4)
+```
+
+
